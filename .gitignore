@@ -1,0 +1,33 @@
+# Build outputs
+build/
+install/
+.build
+compile_commands.json
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+
+# Conan
+.conan/
+graph_info.json
+
+# Editor / IDE
+.vscode/*
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+
+# Test / coverage artifacts
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+coverage/
+
+# Sanitizer logs
+*.asan.log
+*.tsan.log
+*.msan.log
+*.ubsan.log

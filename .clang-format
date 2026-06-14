@@ -1,0 +1,38 @@
+BasedOnStyle: Google
+Language: Cpp
+Standard: c++20
+
+ColumnLimit: 80
+IndentWidth: 2
+TabWidth: 2
+SortIncludes: true
+
+BreakBeforeBraces: Allman
+BreakBeforeConceptDeclarations: Always
+BreakStringLiterals: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 4
+NamespaceIndentation: Inner
+DerivePointerAlignment: false
+PointerAlignment: Left
+SeparateDefinitionBlocks: Always
+
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 2
+ReflowComments: true
+
+CommentPragmas: "^ IWYU pragma:|^ NOLINT"
+
+QualifierAlignment: Custom
+QualifierOrder:
+  [
+    "friend",
+    "static",
+    "inline",
+    "constexpr",
+    "const",
+    "volatile",
+    "restrict",
+    "type",
+  ]

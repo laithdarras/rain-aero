@@ -1,0 +1,64 @@
+# Comprehensive list of checks - https://clang.llvm.org/extra/clang-tidy/checks/list.html
+Checks: >
+  -*, bugprone-*, -bugprone-easily-swappable-parameters, clang-analyzer-core.*, clang-analyzer-cplusplus.*,
+  cppcoreguidelines-*, -cppcoreguidelines-avoid-magic-numbers, google-*, -google-readability-namespace-comments,
+  -google-runtime-int, -google-runtime-references, hicpp-*, misc-*, -misc-non-private-member-variables-in-classes,
+  -misc-include-cleaner, modernize-*, -modernize-use-trailing-return-type, performance-*, portability-*,
+  -portability-avoid-pragma-once, readability-*, -readability-magic-numbers, -readability-todo,
+  -readability-identifier-length, clang-analyzer-security.*, cert-*, clang-analyzer-optin.core.*,
+  clang-analyzer-optin.cplusplus.*
+
+# Turn all the warnings from the checks above into errors.
+WarningsAsErrors: >
+  bugprone-*, cppcoreguidelines-pro-bounds-pointer-arithmetic, google-readability-casting, hicpp-*,
+  misc-header-include-cycle, misc-no-recursion, modernize-deprecated-headers
+
+CheckOptions:
+  - key: modernize-use-nullptr.NullMacros
+    value: "NULL"
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypeAliasCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.MethodCase
+    value: camelBack
+  - key: readability-identifier-naming.LocalVariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ClassMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.ClassMemberSuffix
+    value: _
+  - key: readability-identifier-naming.ProtectedMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.ProtectedMemberSuffix
+    value: _
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: _
+  - key: readability-identifier-naming.PublicMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.ConstantMemberCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.ConstantParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: UPPER_CASE
+  - key: hicpp-braces-around-statements.ShortStatementLines
+    value: 2
+  - key: modernize-deprecated-headers.CheckHeaderFile
+    value: true
