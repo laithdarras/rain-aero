@@ -6,7 +6,7 @@
 /// Byte layout of a MISB ST 0601 local set packet:
 ///   [0..15]  16-byte Universal Label (UL key)
 ///   [16..17] BER-encoded length (short or long form)
-///   [18..]   Tag-Value pairs: | tag (1 byte) | length (1 byte) | value (N bytes) |
+///   [18..]   Tag-Value pairs: | tag (BER-OID) | length (BER) | value (N bytes) |, ending with tag 1 (checksum)
 
 #include "klv_parser.h"
 
@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <span>
 
+#include "misb.hpp"
 #include "pose_types.h"
 
 namespace rain_aero
@@ -22,9 +23,6 @@ namespace rain_aero
 
   namespace
   {
-
-    /// Number of bytes in the MISB ST 0601 Universal Label key.
-    constexpr std::size_t UL_KEY_SIZE = 16;
 
     /// MISB ST 0601 tag identifiers for the fields we implement.
     /// Values match the tag numbers defined in ST 0601.17.
@@ -73,48 +71,6 @@ namespace rain_aero
         result = (result << 8U) | data[i];
       }
       return result;
-    }
-
-    /// Decode the BER-encoded length field and return the payload length
-    /// Also advances the offset past the length bytes
-    ///
-    /// BER short form: 1 byte, value 0x00-0x7F = length directly.
-    /// BER long form:  first byte = 0x80 | N, followed by N bytes of length.
-    ///
-    /// @param data    Full packet buffer.
-    /// @param offset  Current position; advanced past the length bytes on return.
-    /// @returns       Decoded length, or 0 if incorrectly structured.
-    [[nodiscard]] std::size_t decodeBerLength(std::span<const uint8_t> data,
-                                              std::size_t& offset)
-    {
-      if (offset >= data.size())
-      {
-        return 0;
-      }
-
-      const uint8_t first_byte = data[offset++];
-
-      // Short form: high bit clear, value is the length directly.
-      if ((first_byte & 0x80U) == 0)
-      {
-        return first_byte;
-      }
-
-      // Long form: low 7 bits = number of subsequent length bytes.
-      const std::size_t n_len_bytes = first_byte & 0x7FU;
-
-      if (n_len_bytes == 0 || n_len_bytes > 4 || offset + n_len_bytes > data.size())
-      {
-        return 0;  // malformed or unsupported length encoding
-      }
-
-      std::size_t length = 0;
-      for (std::size_t i = 0; i < n_len_bytes; ++i)
-      {
-        length = (length << 8U) | data[offset++];
-      }
-
-      return length;
     }
 
     /// Decode tag 2: Precision Timestamp.
@@ -260,44 +216,25 @@ namespace rain_aero
     FrameRecord record;
     record.stream_pts = pts;
 
-    // --- Skip the 16-byte Universal Label key ---
-    // We trust FFmpeg to have identified this as a KLV packet already.
-    // In production we would verify the UL matches the ST 0601 key.
-    if (data.size() <= UL_KEY_SIZE)
+    // --- Verify the ST 0601 Universal Label, BER length and tag 1 checksum ---
+    // A packet that fails any of these produces no pose data.
+    const auto packet = misb::st0601::Packet::parse(data.data(), data.size());
+    if (!packet)
     {
-      return record;  // packet too short to contain any tags
+      return record;
     }
 
-    std::size_t offset = UL_KEY_SIZE;
-
-    // --- Decode the BER outer length ---
-    const std::size_t payload_length = decodeBerLength(data, offset);
-    if (payload_length == 0 || offset + payload_length > data.size())
+    // --- Walk the tag-value pairs (BER-OID tags, BER lengths) ---
+    for (const auto& item : packet->items())
     {
-      return record;  // malformed length field
-    }
-
-    // --- Walk the tag-value pairs ---
-    const std::size_t payload_end = offset + payload_length;
-
-    while (offset < payload_end)
-    {
-      // Each item: 1 byte tag, 1 byte length, N bytes value.
-      if (offset + 2 > payload_end)
+      if (item.tag > 0xFFU)
       {
-        break;  // not enough bytes for a complete tag-length pair
+        ++record.validity.tags_skipped;
+        continue;
       }
 
-      const auto raw_tag     = static_cast<uint8_t>(data[offset++]);
-      const auto value_length = static_cast<std::size_t>(data[offset++]);
-
-      if (offset + value_length > payload_end)
-      {
-        break;  // value extends past the declared payload boundary
-      }
-
-      const auto value = data.subspan(offset, value_length);
-      offset += value_length;
+      const auto raw_tag = static_cast<uint8_t>(item.tag);
+      const auto value   = std::span<const uint8_t>(item.value.data(), item.value.size());
 
       // Dispatch to the appropriate decoder if we recognize this tag.
       const auto tag = static_cast<St0601Tag>(raw_tag);
